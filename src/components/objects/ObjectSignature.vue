@@ -11,15 +11,6 @@
         class="absolute right-0 bottom-0 w-10 h-10 bg-green-400 rounded-full
         cursor-nwse-resize transform translate-x-1/2 translate-y-1/2 md:scale-25" />
     </div>
-    <svg v-bind="svg" width="100%" height="100%">
-      <path
-        stroke-width="5"
-        stroke-linejoin="round"
-        stroke-linecap="round"
-        stroke="black"
-        fill="none"
-        :d="path" />
-    </svg>
   </div>
 </template>
 
