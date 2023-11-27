@@ -2,8 +2,7 @@
   <div ref="signatureContainer"
     @mousedown.passive="handleMousedown"
     @touchstart.passive="handleTouchStart"
-    :class="['absolute w-full h-full cursor-grab',
-      { 'cursor-grabbing operation': moveOperation }]">
+    class="absolute w-full h-full">
     <div data-direction="left"
       class="resize-border h-full w-1 left-0 top-0 border-l cursor-ew-resize" />
     <div data-direction="top"
@@ -32,16 +31,12 @@ import { reactive, computed } from "vue"
 
 export default {
   name: 'ObjectImage',
-  props: {
-    operation: { required: true }
-  },
   data() {
     return {
       data: reactive({
         x: 0,
         y: 0,
       }),
-      moveOperation: computed(() => this.operation === 'move')
     }
   },
   mounted() {

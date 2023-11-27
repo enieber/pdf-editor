@@ -38,7 +38,8 @@
             :style="{ transform: `scale(${pagesScale[pageIndex]})`, touchAction: 'none' }"
           >
             <div v-for="(object, objectIndex) in allObjects"
-              :key="objectIndex">
+              :key="objectIndex"
+              class="absolute left-0 top-0 select-none">
               <ObjectContainer
                 v-if="object.page == pageIndex"
                 @update="(payload) => updateObject(object.id, payload)"

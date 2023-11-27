@@ -59,9 +59,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-.operation {
-  background-color: rgba(0, 0, 0, 0.1);
-}
-</style>

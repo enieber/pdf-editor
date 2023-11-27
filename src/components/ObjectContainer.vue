@@ -1,16 +1,15 @@
 <template>
   <div
-    class="absolute left-0 top-0 select-none"
+    :class="['absolute w-full h-full cursor-grab',
+      { 'cursor-grabbing operation': moveOperation }]"
     :style="{ width: `${width + data.dw}px`, height: `${height + data.dh}px`, transform: `translate(${x + data.dx}px, ${y + data.dy}px)` }"
   >
     <ObjectImage v-if="type == 'image'"
-      :operation="operation"
       @panstart="handlePanStart"
       @panmove="handlePanMove"
       @panend="handlePanEnd" />
 
     <ObjectSignature v-if="type == 'signature'"
-      :operation="operation"
       @panstart="handlePanStart"
       @panmove="handlePanMove"
       @panend="handlePanEnd" />
@@ -170,3 +169,9 @@ export default {
 }
 
 </script>
+
+<style scoped>
+  .operation {
+    background-color: rgba(0, 0, 0, 0.3)
+  }
+</style>
