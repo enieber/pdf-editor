@@ -9,7 +9,7 @@
       @panmove="handlePanMove"
       @panend="handlePanEnd" />
 
-    <ObjectSignature v-if="type == 'signature'"
+    <ObjectSignature v-else-if="type == 'signature'"
       @panstart="handlePanStart"
       @panmove="handlePanMove"
       @panend="handlePanEnd" />
