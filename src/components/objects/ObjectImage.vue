@@ -31,6 +31,7 @@
 import { reactive, computed } from "vue"
 
 export default {
+  name: 'ObjectImage',
   props: {
     operation: { required: true }
   },
