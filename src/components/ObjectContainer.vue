@@ -164,7 +164,7 @@ export default {
       }
       this.operation = 'scale'
       this.data.directions = event.target.dataset.direction.split('-')
-    }
+    },
   },
 }
 
