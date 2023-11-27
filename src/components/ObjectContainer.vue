@@ -33,7 +33,7 @@ import ObjectImage from './objects/ObjectImage.vue'
 import ObjectSignature from './objects/ObjectSignature.vue'
 
 export default {
-  name: 'PdfEditor',
+  name: 'ObjectContainer',
   components: {
     ObjectImage,
     ObjectSignature,
