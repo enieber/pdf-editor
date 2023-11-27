@@ -27,143 +27,146 @@
   </div>
 </template>
 
-<script setup>
-import { reactive, toRefs, ref, computed, onMounted } from 'vue'
+<script>
+import { reactive, ref, computed } from 'vue'
 import ObjectImage from './objects/ObjectImage.vue'
 import ObjectSignature from './objects/ObjectSignature.vue'
 
-const props = defineProps({
-  payload: { required: true },
-  x: { required: true },
-  y: { required: true },
-  file: { required: true },
-  width: { required: true },
-  height: { required: true },
-  pageScale: { required: true },
-  opacity: { required: true },
-  type: { required: true },
-  path: { required: false, default: null },
-
-  object: {
-    required: true,
-    type: Object,
+export default {
+  name: 'PdfEditor',
+  components: {
+    ObjectImage,
+    ObjectSignature,
   },
-})
+  props: {
+    payload: { required: true },
+    x: { required: true },
+    y: { required: true },
+    file: { required: true },
+    width: { required: true },
+    height: { required: true },
+    pageScale: { required: true },
+    opacity: { required: true },
+    type: { required: true },
+    path: { required: false, default: null },
 
-const emit = defineEmits(['update', 'delete'])
-
-const canvasImage = ref()
-const signature = ref(null)
-const operation = ref(null)
-
-const data = reactive({
-  startX: null,
-  startY: null,
-  directions: [],
-  dx: 0,
-  dy: 0,
-  dw: 0,
-  dh: 0,
-  pannableFunction: null,
-})
-
-const moveOperation = computed(() => {
-  return operation.value === 'move'
-})
-
-onMounted(() => {
-  setCanvas(props)
-})
-
-function setCanvas(props) {
-  let { width, height } = props
-  if (props.type == 'image') {
-    // use canvas to prevent img tag's auto resize
-    canvasImage.value.width = width
-    canvasImage.value.height = height
-    canvasImage.value.getContext('2d').drawImage(props.payload, 0, 0)
-
-    let scale = 1
-    const limit = 500
-    if (width > limit) {
-      scale = limit / width
-    }
-    if (height > limit) {
-      scale = Math.min(scale, limit / height)
-    }
-    emit('update', {
-      width: width * scale,
-      height: height * scale,
-    })
-
-    if (!['image/jpeg', 'image/png'].includes(props.file.type)) {
-      canvasImage.value.toBlob((blob) => {
-        emit('update', {
-          file: blob,
-        })
+    object: {
+      required: true,
+      type: Object,
+    },
+  },
+  data() {
+    return {
+      canvasImage: ref(),
+      signature: ref(null),
+      operation: ref(null),
+      data: reactive({
+        startX: null,
+        startY: null,
+        directions: [],
+        dx: 0,
+        dy: 0,
+        dw: 0,
+        dh: 0,
+        pannableFunction: null,
+      }),
+      moveOperation: computed(() => {
+        return this.operation === 'move'
       })
     }
-  } else if (props.type == 'signature') {
-    // signature.value.setAttribute("viewBox", `0 0 ${width} ${height}`);
-  }
+  },
+  mounted() {
+    this.setCanvas()
+  },
+  methods: {
+    setCanvas() {
+      if (this.type == 'image') {
+        // use canvas to prevent img tag's auto resize
+        this.$refs.canvasImage.width = this.width
+        this.$refs.canvasImage.height = this.height
+        this.$refs.canvasImage.getContext('2d').drawImage(this.payload, 0, 0)
+
+        let scale = 1
+        const limit = 500
+        if (this.width > limit) {
+          scale = limit / this.width
+        }
+        if (this.height > limit) {
+          scale = Math.min(scale, limit / this.height)
+        }
+        this.$emit('update', {
+          width: this.width * scale,
+          height: this.height * scale,
+        })
+
+        if (!['image/jpeg', 'image/png'].includes(this.file.type)) {
+          this.$refs.canvasImage.toBlob((blob) => {
+            this.$emit('update', {
+              file: blob,
+            })
+          })
+        }
+      } else if (this.type == 'signature') {
+        // signature.value.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      }
+    },
+    handlePanMove(event) {
+      const _dx = (event.x - this.data.startX) / this.pageScale
+      const _dy = (event.y - this.data.startY) / this.pageScale
+      if (this.operation === 'move') {
+        this.data.dx = _dx
+        this.data.dy = _dy
+      } else if (this.operation === 'scale') {
+        if (this.data.directions.includes('left')) {
+          this.data.dx = _dx
+          this.data.dw = -_dx
+        }
+        if (this.data.directions.includes('top')) {
+          this.data.dy = _dy
+          this.data.dh = -_dy
+        }
+        if (this.data.directions.includes('right')) {
+          this.data.dw = _dx
+        }
+        if (this.data.directions.includes('bottom')) {
+          this.data.dh = _dy
+        }
+      }
+    },
+    handlePanEnd() {
+      if (this.operation === 'move') {
+        this.$emit('update', {
+          x: this.x + this.data.dx,
+          y: this.y + this.data.dy,
+        })
+        this.data.dx = 0
+        this.data.dy = 0
+      } else if (this.operation === 'scale') {
+        this.$emit('update', {
+          x: this.x + this.data.dx,
+          y: this.y + this.data.dy,
+          width: this.width + this.data.dw,
+          height: this.height + this.data.dh,
+        })
+
+        this.data.dx = 0
+        this.data.dy = 0
+        this.data.dw = 0
+        this.data.dh = 0
+        this.data.directions = []
+      }
+      this.operation = ''
+    },
+    handlePanStart(event) {
+      this.data.startX = event.x
+      this.data.startY = event.y
+      if (event.target === event.currentTarget) {
+        return (this.operation = 'move')
+      }
+      this.operation = 'scale'
+      this.data.directions = event.target.dataset.direction.split('-')
+    }
+  },
 }
 
-function handlePanMove(event) {
-  const _dx = (event.x - data.startX) / props.pageScale
-  const _dy = (event.y - data.startY) / props.pageScale
-  if (operation.value === 'move') {
-    data.dx = _dx
-    data.dy = _dy
-  } else if (operation.value === 'scale') {
-    if (data.directions.includes('left')) {
-      data.dx = _dx
-      data.dw = -_dx
-    }
-    if (data.directions.includes('top')) {
-      data.dy = _dy
-      data.dh = -_dy
-    }
-    if (data.directions.includes('right')) {
-      data.dw = _dx
-    }
-    if (data.directions.includes('bottom')) {
-      data.dh = _dy
-    }
-  }
-}
-
-function handlePanEnd() {
-  if (operation.value === 'move') {
-    emit('update', {
-      x: props.x + data.dx,
-      y: props.y + data.dy,
-    })
-    data.dx = 0
-    data.dy = 0
-  } else if (operation.value === 'scale') {
-    emit('update', {
-      x: props.x + data.dx,
-      y: props.y + data.dy,
-      width: props.width + data.dw,
-      height: props.height + data.dh,
-    })
-
-    data.dx = 0
-    data.dy = 0
-    data.dw = 0
-    data.dh = 0
-    data.directions = []
-  }
-  operation.value = ''
-}
-
-function handlePanStart(event) {
-  data.startX = event.x
-  data.startY = event.y
-  if (event.target === event.currentTarget) {
-    return (operation.value = 'move')
-  }
-  operation.value = 'scale'
-  data.directions = event.target.dataset.direction.split('-')
-}
 </script>
