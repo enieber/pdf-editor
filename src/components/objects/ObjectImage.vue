@@ -27,7 +27,7 @@
 </template>
 
 <script>
-import { reactive, computed } from "vue"
+import { reactive } from "vue"
 
 export default {
   name: 'ObjectImage',
