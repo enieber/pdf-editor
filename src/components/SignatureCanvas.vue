@@ -18,197 +18,176 @@
   </div>
 </template>
 
-<script setup>
-import { reactive, onMounted, onBeforeUnmount, ref } from 'vue'
+<script>
+import { reactive, ref } from 'vue'
 
-const emit = defineEmits(['cancel', 'finish'])
+export default {
+  name: 'SignatureCanvas',
+  data() {
+    return {
+      paths: ref([]),
+      path: ref(''),
+      data: reactive({
+        drawing: false,
+        x: 0,
+        y: 0,
+        minX: Infinity,
+        minY: Infinity,
+        maxX: 0,
+        maxY: 0,
+      }),
+    }
+  },
+  mounted() {
+    this.setupEvent()
+  },
+  beforeUnmount() {
+    this.$refs.signatureCanvas.removeEventListener('mousedown', this.handleMousedown)
+    this.$refs.signatureCanvas.removeEventListener('touchstart', this.handleTouchStart)
+  },
+  methods: {
+    setupEvent() {
+      this.$refs.signatureCanvas.addEventListener('mousedown', this.handleMousedown)
+      this.$refs.signatureCanvas.addEventListener('touchstart', this.handleTouchStart)
+    },
+    handleMousedown(event) {
+      this.data.x = event.clientX
+      this.data.y = event.clientY
+      const target = event.target
+      // emit('panstart', {
+      //     x: this.data.x,
+      //     y: this.data.y,
+      //     target,
+      //     currentTarget: this.$refs.signatureCanvas
+      // })
+      this.handlePanStart({
+        x: this.data.x,
+        y: this.data.y,
+        target,
+        currentTarget: this.$refs.signatureCanvas,
+      })
+      this.$refs.signatureCanvas.addEventListener('mousemove', this.handleMousemove)
+      this.$refs.signatureCanvas.addEventListener('mouseup', this.handleMouseup)
+    },
+    handleMousemove(event) {
+      const dx = event.clientX - this.data.x
+      const dy = event.clientY - this.data.y
+      this.data.x = event.clientX
+      this.data.y = event.clientY
 
-const signatureCanvas = ref()
-const paths = ref([])
-const path = ref('')
-const data = reactive({
-  drawing: false,
-  x: 0,
-  y: 0,
-  minX: Infinity,
-  minY: Infinity,
-  maxX: 0,
-  maxY: 0,
-})
+      // emit('panmove', {
+      //     x: this.data.x,
+      //     y: this.data.y,
+      //     dx,
+      //     dy
+      // })
+      this.handlePanMove({
+        x: this.data.x,
+        y: this.data.y,
+        dx,
+        dy,
+      })
+    },
+    handleMouseup(event) {
+      this.data.x = event.clientX
+      this.data.y = event.clientY
 
-onMounted(() => {
-  setupEvent()
-})
+      // emit('panend', { x: this.data.x, y: this.data.y })
+      this.handlePanEnd({ x: this.data.x, y: this.data.y })
+      this.$refs.signatureCanvas.removeEventListener('mousemove', this.handleMousemove)
+      this.$refs.signatureCanvas.removeEventListener('mouseup', this.handleMouseup)
+    },
+    handleTouchStart(event) {
+      if (event.touches.length > 1) return
+      const touch = event.touches[0]
+      this.data.x = touch.clientX
+      this.data.y = touch.clientY
+      const target = touch.target
 
-onBeforeUnmount(() => {
-  signatureCanvas.value.removeEventListener('mousedown', handleMousedown)
-  signatureCanvas.value.removeEventListener('touchstart', handleTouchStart)
-})
+      // emit('panstart', { x: this.data.x, y: this.data.y, target })
+      this.handlePanStart({ x: this.data.x, y: this.data.y, target })
 
-function setupEvent() {
-  signatureCanvas.value.addEventListener('mousedown', handleMousedown)
-  signatureCanvas.value.addEventListener('touchstart', handleTouchStart)
-}
+      this.$refs.signatureCanvas.addEventListener('touchmove', this.handleTouchmove) // { passive: false }
+      this.$refs.signatureCanvas.addEventListener('touchend', this.handleTouchend)
+    },
+    handleTouchmove(event) {
+      event.preventDefault()
+      if (event.touches.length > 1) return
+      const touch = event.touches[0]
+      const dx = touch.clientX - this.data.x
+      const dy = touch.clientY - this.data.y
+      this.data.x = touch.clientX
+      this.data.y = touch.clientY
 
-function handleMousedown(event) {
-  data.x = event.clientX
-  data.y = event.clientY
-  const target = event.target
-  // emit('panstart', {
-  //     x: data.x,
-  //     y: data.y,
-  //     target,
-  //     currentTarget: signatureCanvas.value
-  // })
-  handlePanStart({
-    x: data.x,
-    y: data.y,
-    target,
-    currentTarget: signatureCanvas.value,
-  })
-  signatureCanvas.value.addEventListener('mousemove', handleMousemove)
-  signatureCanvas.value.addEventListener('mouseup', handleMouseup)
-}
+      // emit('panmove', { x: this.data.x, y: this.data.y, dx, dy })
+      this.handlePanMove({ x: this.data.x, y: this.data.y, dx, dy })
+    },
+    handleTouchend(event) {
+      const touch = event.changedTouches[0]
+      this.data.x = touch.clientX
+      this.data.y = touch.clientY
 
-function handleMousemove(event) {
-  const dx = event.clientX - data.x
-  const dy = event.clientY - data.y
-  data.x = event.clientX
-  data.y = event.clientY
+      // emit('panend', { x: this.data.x, y: this.data.y })
+      this.handlePanEnd({ x: this.data.x, y: this.data.y })
+      this.$refs.signatureCanvas.removeEventListener('touchmove', this.handleTouchmove)
+      this.$refs.signatureCanvas.removeEventListener('touchend', this.handleTouchend)
+    },
+    handlePanStart(event) {
+      if (event.target !== event.currentTarget) {
+        this.data.drawing = false
+        return
+      }
 
-  // emit('panmove', {
-  //     x: data.x,
-  //     y: data.y,
-  //     dx,
-  //     dy
-  // })
-  handlePanMove({
-    x: data.x,
-    y: data.y,
-    dx,
-    dy,
-  })
-}
+      this.data.drawing = true
+      this.data.x = event.x
+      this.data.y = event.y
+      this.data.minX = Math.min(this.data.minX, this.data.x)
+      this.data.maxX = Math.max(this.data.maxX, this.data.x)
+      this.data.minY = Math.min(this.data.minY, this.data.y)
+      this.data.maxY = Math.max(this.data.maxY, this.data.y)
+      this.paths.push(['M', this.data.x, this.data.y])
+      this.path += `M${this.data.x},${this.data.y}`
+    },
+    handlePanMove(event) {
+      if (!this.data.drawing) return
 
-function handleMouseup(event) {
-  data.x = event.clientX
-  data.y = event.clientY
+      this.data.x = event.x
+      this.data.y = event.y
+      this.data.minX = Math.min(this.data.minX, this.data.x)
+      this.data.maxX = Math.max(this.data.maxX, this.data.x)
+      this.data.minY = Math.min(this.data.minY, this.data.y)
+      this.data.maxY = Math.max(this.data.maxY, this.data.y)
+      this.path += `L${this.data.x},${this.data.y}`
 
-  // emit('panend', { x: data.x, y: data.y })
-  handlePanEnd({ x: data.x, y: data.y })
-  signatureCanvas.value.removeEventListener('mousemove', handleMousemove)
-  signatureCanvas.value.removeEventListener('mouseup', handleMouseup)
-}
+      this.paths.push(['L', this.data.x, this.data.y])
+    },
+    handlePanEnd() {
+      this.data.drawing = false
+    },
+    finish() {
+      if (!this.paths.length) return
+      const dx = -(this.data.minX - 10)
+      const dy = -(this.data.minY - 10)
+      const originWidth = this.data.maxX - this.data.minX + 20
+      const originHeight = this.data.maxY - this.data.minY + 20
 
-function handleTouchStart(event) {
-  if (event.touches.length > 1) return
-  const touch = event.touches[0]
-  data.x = touch.clientX
-  data.y = touch.clientY
-  const target = touch.target
+      let scale = 1
+      if (originWidth > 500) {
+        scale = 500 / originWidth
+      }
 
-  // emit('panstart', { x: data.x, y: data.y, target })
-  handlePanStart({ x: data.x, y: data.y, target })
-
-  signatureCanvas.value.addEventListener('touchmove', handleTouchmove) // { passive: false }
-  signatureCanvas.value.addEventListener('touchend', handleTouchend)
-}
-
-function handleTouchmove(event) {
-  event.preventDefault()
-  if (event.touches.length > 1) return
-  const touch = event.touches[0]
-  const dx = touch.clientX - data.x
-  const dy = touch.clientY - data.y
-  data.x = touch.clientX
-  data.y = touch.clientY
-
-  // emit('panmove', { x: data.x, y: data.y, dx, dy })
-  handlePanMove({ x: data.x, y: data.y, dx, dy })
-}
-
-function handleTouchend(event) {
-  const touch = event.changedTouches[0]
-  data.x = touch.clientX
-  data.y = touch.clientY
-
-  // emit('panend', { x: data.x, y: data.y })
-  handlePanEnd({ x: data.x, y: data.y })
-  signatureCanvas.value.removeEventListener('touchmove', handleTouchmove)
-  signatureCanvas.value.removeEventListener('touchend', handleTouchend)
-}
-
-// --------------------------- pannable end ------------------
-
-function handlePanStart(event) {
-  if (event.target !== event.currentTarget) {
-    data.drawing = false
-    return
+      this.$emit('finish', {
+        width: originWidth,
+        height: originHeight,
+        path: this.paths.reduce((acc, cur) => {
+          return acc + cur[0] + (cur[1] + dx) + ',' + (cur[2] + dy)
+        }, ''),
+        scale
+      })
+    },
+    cancel() {
+      this.$emit('cancel')
+    }
   }
-
-  data.drawing = true
-  data.x = event.x
-  data.y = event.y
-  data.minX = Math.min(data.minX, data.x)
-  data.maxX = Math.max(data.maxX, data.x)
-  data.minY = Math.min(data.minY, data.y)
-  data.maxY = Math.max(data.maxY, data.y)
-  paths.value.push(['M', data.x, data.y])
-  path.value += `M${data.x},${data.y}`
 }
-
-function handlePanMove(event) {
-  if (!data.drawing) return
-
-  data.x = event.x
-  data.y = event.y
-  data.minX = Math.min(data.minX, data.x)
-  data.maxX = Math.max(data.maxX, data.x)
-  data.minY = Math.min(data.minY, data.y)
-  data.maxY = Math.max(data.maxY, data.y)
-  path.value += `L${data.x},${data.y}`
-
-  paths.value.push(['L', data.x, data.y])
-}
-
-function handlePanEnd() {
-  data.drawing = false
-}
-
-function finish() {
-  if (!paths.value.length) return
-  const dx = -(data.minX - 10)
-  const dy = -(data.minY - 10)
-  const originWidth = data.maxX - data.minX + 20
-  const originHeight = data.maxY - data.minY + 20
-
-  let scale = 1
-  if (originWidth > 500) {
-    scale = 500 / originWidth
-  }
-
-  emit('finish', {
-    width: originWidth,
-    height: originHeight,
-    path: paths.value.reduce((acc, cur) => {
-      return acc + cur[0] + (cur[1] + dx) + ',' + (cur[2] + dy)
-    }, ''),
-    scale
-  })
-}
-
-function cancel() {
-  emit('cancel')
-}
-
-// return {
-//     ...toRefs(data),
-//     handlePanEnd,
-//     handlePanStart,
-//     handlePanMove,
-//     finish,
-//     cancel,
-//     signatureCanvas,
-// }
-// @TODO pencil color
 </script>
