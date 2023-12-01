@@ -1,7 +1,11 @@
 <template>
   <div class="flex flex-col items-center py-16 bg-gray-100 min-h-screen">
     <!-- Signature Canvas -->
-    <SignatureCanvas v-if="signatureCanvas.isShow" @finish="pasteSignature" @cancel="signatureCanvas.isShow = false" />
+    <SignatureCanvas
+      v-if="signatureCanvas.isShow"
+      @finish="pasteSignature"
+      @cancel="signatureCanvas.isShow = false"
+    />
     <!-- END -->
     <div class="fixed z-10 top-0 left-0 right-0 h-12 flex justify-center items-center bg-gray-200 border-b border-gray-300">
       <div class="relative mr-3 flex h-8 bg-gray-400 rounded-sm overflow-hidden md:mr-4">
@@ -217,7 +221,7 @@ export default {
         page: this.selectedPageIndex,
       }
 
-      this.allObjects.push(signatureObject)
+      this.allObjects = [...this.allObjects, signatureObject]
       this.signatureCanvas.isShow = false
     },
   }
